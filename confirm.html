@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جاري التحقق... - سحاب</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 100%;
+            padding: 60px 40px;
+            text-align: center;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+
+        p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 30px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-icon">🚗</div>
+        <h1>سحاب</h1>
+        <p id="status">جاري التحقق من الرابط...</p>
+        <div class="loader" id="loader"></div>
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ryoshojfihwilzgfxvkg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5b3Nob2pmaWh3aWx6Z2Z4dmtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDQ4OTksImV4cCI6MjA3Mzc4MDg5OX0.uDehGlr9o9IaCPHbMi4HdYeA7K0-K3gu2omWuecFLb8';
+        
+        const { createClient } = window.supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const statusEl = document.getElementById('status');
+        const loaderEl = document.getElementById('loader');
+        const errorEl = document.getElementById('error');
+        const successEl = document.getElementById('success');
+
+        console.log('🔍 صفحة التحقق - بدء المعالجة');
+        console.log('🌐 URL:', window.location.href);
+
+        async function handleAuth() {
+            try {
+                // استخراج المعاملات من الـ URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const token_hash = urlParams.get('token_hash');
+                const type = urlParams.get('type');
+                const next = urlParams.get('next') || '/';
+
+                console.log('📋 Token Hash:', token_hash ? 'موجود' : 'غير موجود');
+                console.log('📋 Type:', type);
+                console.log('📋 Next:', next);
+
+                if (!token_hash || !type) {
+                    throw new Error('معاملات الرابط غير صحيحة');
+                }
+
+                statusEl.textContent = 'جاري التحقق من الرمز...';
+
+                // التحقق من الـ OTP
+                const { data, error } = await supabaseClient.auth.verifyOtp({
+                    token_hash: token_hash,
+                    type: type
+                });
+
+                console.log('✅ نتيجة التحقق:', { data, error });
+
+                if (error) {
+                    throw error;
+                }
+
+                // نجح التحقق - إعادة التوجيه
+                loaderEl.style.display = 'none';
+                successEl.style.display = 'block';
+                successEl.textContent = '✅ تم التحقق بنجاح! جاري إعادة التوجيه...';
+                statusEl.textContent = '';
+
+                console.log('🔄 إعادة التوجيه إلى:', next);
+
+                setTimeout(() => {
+                    window.location.href = next;
+                }, 1500);
+
+            } catch (error) {
+                console.error('❌ خطأ:', error);
+                
+                loaderEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                statusEl.textContent = '';
+                
+                let errorMessage = 'حدث خطأ في التحقق من الرابط';
+                
+                if (error.message) {
+                    if (error.message.includes('expired')) {
+                        errorMessage = 'انتهت صلاحية الرابط. يرجى طلب رابط جديد من التطبيق';
+                    } else if (error.message.includes('invalid')) {
+                        errorMessage = 'الرابط غير صالح. يرجى طلب رابط جديد';
+                    } else {
+                        errorMessage = error.message;
+                    }
+                }
+                
+                errorEl.innerHTML = `
+                    <strong>❌ ${errorMessage}</strong><br><br>
+                    <small>يمكنك إغلاق هذه الصفحة والعودة للتطبيق</small>
+                `;
+            }
+        }
+
+        // تشغيل المعالجة عند تحميل الصفحة
+        handleAuth();
+    </script>
+</body>
+</html>
