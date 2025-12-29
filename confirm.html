@@ -157,17 +157,28 @@
                     throw error;
                 }
 
-                // نجح التحقق - إعادة التوجيه
+                // نجح التحقق
                 loaderEl.style.display = 'none';
                 successEl.style.display = 'block';
-                successEl.textContent = '✅ تم التحقق بنجاح! جاري إعادة التوجيه...';
                 statusEl.textContent = '';
 
-                console.log('🔄 إعادة التوجيه إلى:', next);
-
-                setTimeout(() => {
-                    window.location.href = next;
-                }, 1500);
+                // إذا كان النوع recovery، نوجه لصفحة إعادة تعيين كلمة المرور
+                if (type === 'recovery') {
+                    successEl.textContent = '✅ تم التحقق بنجاح! جاري التوجيه لإعادة تعيين كلمة المرور...';
+                    console.log('🔄 إعادة التوجيه إلى صفحة reset-password');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'https://hammam1233.github.io/sahab-auth-pages/reset-password.html';
+                    }, 1500);
+                } else {
+                    // أي نوع آخر (مثل email confirmation)
+                    successEl.textContent = '✅ تم التحقق بنجاح! جاري إعادة التوجيه...';
+                    console.log('🔄 إعادة التوجيه إلى:', next);
+                    
+                    setTimeout(() => {
+                        window.location.href = next;
+                    }, 1500);
+                }
 
             } catch (error) {
                 console.error('❌ خطأ:', error);
